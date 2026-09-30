@@ -267,7 +267,10 @@ func CheckNoUnpinnedDependencies(
 ) (PolicyResult, error) {
 	for i := range results.PinningDependenciesResults.Dependencies {
 		dep := results.PinningDependenciesResults.Dependencies[i]
-		if (dep.PinnedAt == nil || *dep.PinnedAt == "") && !isUnpinnedDependencyAllowed(dep, allowed) {
+		// Pinned is the check's verdict on whether the dependency is pinned by hash.
+		// PinnedAt only holds the ref that was used (a tag, branch or digest), so
+		// it cannot tell a pinned dependency from an unpinned one.
+		if (dep.Pinned == nil || !*dep.Pinned) && !isUnpinnedDependencyAllowed(dep, allowed) {
 			logger.Info(fmt.Sprintf("found unpinned dependency %v", dep))
 			return Fail, nil
 		}

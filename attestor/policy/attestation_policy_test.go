@@ -383,6 +383,10 @@ func asPointer(s string) *string {
 	return &s
 }
 
+func asBoolPointer(b bool) *bool {
+	return &b
+}
+
 func TestNoUnpinnedDependencies(t *testing.T) {
 	t.Parallel()
 
@@ -399,7 +403,7 @@ func TestNoUnpinnedDependencies(t *testing.T) {
 			raw: &checker.RawResults{
 				PinningDependenciesResults: checker.PinningDependenciesData{
 					Dependencies: []checker.Dependency{
-						{Name: asPointer("foo"), PinnedAt: asPointer("abcdef")},
+						{Name: asPointer("foo"), PinnedAt: asPointer("abcdef"), Pinned: asBoolPointer(true)},
 					},
 				},
 			},
@@ -409,11 +413,53 @@ func TestNoUnpinnedDependencies(t *testing.T) {
 			expected: Pass,
 		},
 		{
+			name: "dependency pinned to a tag is unpinned",
+			raw: &checker.RawResults{
+				PinningDependenciesResults: checker.PinningDependenciesData{
+					Dependencies: []checker.Dependency{
+						{Name: asPointer("actions/checkout"), PinnedAt: asPointer("v4"), Pinned: asBoolPointer(false)},
+					},
+				},
+			},
+			ignores: []Dependency{
+				{Filepath: "bar", PackageName: "go-bar", Version: "aaaaaa"},
+			},
+			expected: Fail,
+		},
+		{
+			name: "pinned dependency without a ref",
+			raw: &checker.RawResults{
+				PinningDependenciesResults: checker.PinningDependenciesData{
+					Dependencies: []checker.Dependency{
+						{Name: asPointer("requests"), PinnedAt: nil, Pinned: asBoolPointer(true)},
+					},
+				},
+			},
+			ignores: []Dependency{
+				{Filepath: "bar", PackageName: "go-bar", Version: "aaaaaa"},
+			},
+			expected: Pass,
+		},
+		{
+			name: "dependency without a pin verdict",
+			raw: &checker.RawResults{
+				PinningDependenciesResults: checker.PinningDependenciesData{
+					Dependencies: []checker.Dependency{
+						{Name: asPointer("foo"), PinnedAt: nil, Pinned: nil},
+					},
+				},
+			},
+			ignores: []Dependency{
+				{Filepath: "bar", PackageName: "go-bar", Version: "aaaaaa"},
+			},
+			expected: Fail,
+		},
+		{
 			name: "some unpinned dependencies",
 			raw: &checker.RawResults{
 				PinningDependenciesResults: checker.PinningDependenciesData{
 					Dependencies: []checker.Dependency{
-						{Name: asPointer("foo"), PinnedAt: nil},
+						{Name: asPointer("foo"), PinnedAt: nil, Pinned: asBoolPointer(false)},
 					},
 				},
 			},
@@ -427,7 +473,7 @@ func TestNoUnpinnedDependencies(t *testing.T) {
 			raw: &checker.RawResults{
 				PinningDependenciesResults: checker.PinningDependenciesData{
 					Dependencies: []checker.Dependency{
-						{Name: asPointer("foo"), PinnedAt: nil},
+						{Name: asPointer("foo"), PinnedAt: nil, Pinned: asBoolPointer(false)},
 					},
 				},
 			},
@@ -439,7 +485,7 @@ func TestNoUnpinnedDependencies(t *testing.T) {
 			raw: &checker.RawResults{
 				PinningDependenciesResults: checker.PinningDependenciesData{
 					Dependencies: []checker.Dependency{
-						{Name: asPointer("second-pkg"), Location: &checker.File{Path: "bar"}, PinnedAt: nil},
+						{Name: asPointer("second-pkg"), Location: &checker.File{Path: "bar"}, PinnedAt: nil, Pinned: asBoolPointer(false)},
 					},
 				},
 			},
@@ -650,7 +696,7 @@ func TestAttestationPolicy_EvaluateResults(t *testing.T) {
 				raw: &checker.RawResults{
 					PinningDependenciesResults: checker.PinningDependenciesData{
 						Dependencies: []checker.Dependency{
-							{Name: asPointer("foo"), PinnedAt: asPointer("abcdef")},
+							{Name: asPointer("foo"), PinnedAt: asPointer("abcdef"), Pinned: asBoolPointer(true)},
 						},
 					},
 				},
